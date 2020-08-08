@@ -1,4 +1,3 @@
-
 # main.py
 
 import argparse
@@ -7,55 +6,49 @@ import csv
 import mysql.connector
 from mysql.connector import errorcode
 
+
 parser = argparse.ArgumentParser()
 
-parser.add_argument("--filename", help="enter the csv filename, file should be in the same directory as the script")
+parser.add_argument(
+    "--filename", 
+    help="enter the csv filename, file should be in the same directory as the script")
 
 args = parser.parse_args()
 
 
-
-
-def read_file(filename, delimiter=','):
+# read the files and create table
+def readFile(filename, delimiter=','):
+    """
+    reads the csv file and returns the column head of the csv file
+    """
     with open(filename, 'r') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=delimiter)
-        line_count = 0
+        count = 0
+        tablename = filename[:-4]
+        data = []
 
         for row in csv_reader:
-            if line_count == 0:
+            if count == 0:
                 columns = row
-
-                line_count += 1
+                # first row - headers/feature names
+                createTable(tablename, columns)
+                count += 1
             else:
-                # print(row)
-                line_count += 1
+                data.append(tuple(row))        
+                count += 1
 
-            if line_count == 10:
-                break
-
-    return columns
-
-
-# first query will be to create a table in the database with the same name(minus the extension)
-# and structure as the csv file if the table doesn't already exists.
-
-DB = 'first_db'
-
-cnx = mysql.connector.connect(user='jon', password='password')
-cursor = cnx.cursor()
+    return columns, data
 
 
 def createTable(tablename, columns):
     column_query = ""
 
     for col in columns:
-        column_query += col + " VARCHAR(20), "
+        column_query += col + " VARCHAR(200), "   # how to make this VARCHAR() length flexible
 
-    column_query = column_query[:-2]
+    column_query = column_query[:-2]    # remove the space and comma
     create_table = f"CREATE TABLE {tablename} ({column_query});"
-
-    print("Query")
-    print(column_query)
+    
     try:
         print(f"Creating table: {tablename}")
         cursor.execute(create_table)
@@ -70,15 +63,27 @@ def createTable(tablename, columns):
 
 if __name__ == "__main__":
 
-    columns = read_file(args.filename)
+    DB = 'first_db'  # local database -- already existing
 
-    print(args.filename, args.filename[:-4])
-    print(columns)
-
+    cnx = mysql.connector.connect(user='jon', password='password')
+    cursor = cnx.cursor()
     cursor.execute(f"USE {DB}")
-    createTable(args.filename[:-4], columns)
 
+    print(f"Using local database: {DB}")
+    print("-"*30)
 
+    # feature/column header, data(rest of the values)
+    columns, data = readFile(args.filename)
 
+    # INSERT INTO filename (c1, c2, ...) VALUES (%s, %s, ...)
+    query = f"INSERT INTO {args.filename[:-4]} ({', '.join(columns)}) VALUES ({', '.join(str('%s '*len(columns)).split())})"
+
+    print("Inserting data...")
+    
+    cursor.executemany(query, data)
+    cnx.commit()
+    
+    print(f"{cursor.rowcount} rows were inserted in the table: {args.filename[:-4]}")
+    print('Done!')
 
 
