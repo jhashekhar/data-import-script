@@ -1,0 +1,5 @@
+{
+    "python.pythonPath": "/Users/xanthate/anaconda3/envs/py38/bin/python",
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": true
+}
