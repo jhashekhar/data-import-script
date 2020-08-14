@@ -11,6 +11,7 @@ Python scripts related to data I/O, MySQL, csv parsing etc. The script performs 
 
 
 ## Todo
-[ ] Insert module MySQL with parsed data from json files.
-[ ] Indexing the data in MongoDB database.
+- [ ] Insert module MySQL with parsed data from json files.
+
+- [ ] Indexing the data in MongoDB database.
 
